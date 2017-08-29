@@ -1431,6 +1431,14 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
         debug!("match_projection: obligation={:?}, trait_bound={:?}",
                obligation, trait_bound);
 
+        if let Ok(InferOk { obligations, .. })
+            = self.infcx.at(&obligation.cause, obligation.param_env)
+            .sup(ty::Binder(skol_trait_ref.clone()), trait_bound.clone()) {
+                self.inferred_obligations.extend(obligations);
+                return self.infcx.leak_check(
+                    false, obligation.cause.span, skol_map, snapshot).is_ok();
+            }
+
         let Normalized { value: normal_bound, obligations } =
             normalize_with_depth(
                 self,
